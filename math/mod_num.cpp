@@ -15,18 +15,22 @@ private:
 		return value;
 	}
 
-public:
-	ModNum(const int value) : num(value) {
-		if (num < 0)
-			num += mod * (-num / mod + 1);
-		else if (num > mod)
-			num = num % mod;
+	inline int int32_normalize(const int value) const
+	{
+		if (value < 0)
+			return mod * (-value / mod + 1);
+		else if (value >= mod)
+			return value % mod;
+		else
+			return value;
 	}
 
-	operator int() const
-	{
-		return num;
-	}
+public:
+	ModNum(const int value) { num = int32_normalize(value); }
+
+	ModNum(const long long value) { num = int32_normalize(value % mod); }
+
+	operator int() const { return num; }
 
 	ModNum& operator=(const ModNum<mod>& rhs)
 	{
@@ -67,15 +71,9 @@ public:
 
 	ModNum operator /(const int rhs) const { return div(rhs); }
 
-	ModNum div(const ModNum& other) const
-	{
-		return (*this) * (other.pow(mod - 2));
-	}
+	ModNum div(const ModNum& other) const { return (*this) * (other.pow(mod - 2)); }
 
-	ModNum div(const int& other) const
-	{
-		return div(ModNum(other));
-	}
+	ModNum div(const int& other) const { return div(ModNum(other)); }
 
 	inline ModNum pow(const unsigned long long power) const
 	{
@@ -93,10 +91,7 @@ public:
 		return resp;
 	}
 
-	inline ModNum pow(const int power) const
-	{
-		return this->pow((const unsigned long long)power);
-	}
+	inline ModNum pow(const int power) const { return this->pow((const unsigned long long)power); }
 };
 
 template<int mod>

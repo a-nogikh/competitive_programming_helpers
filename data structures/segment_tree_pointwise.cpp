@@ -9,22 +9,17 @@ private:
 	vector<T> arr;
 	int size;
 
-	inline void assign(T& left, const T& right)
+	inline void assign(T& left, const T& right) const
 	{
-		
+
 	}
 
-	inline T merge(const T& left, int left_sz, const T& right, int right_sz)
+	inline T merge(const T& left, int left_sz, const T& right, int right_sz) const
 	{
 		return T();
 	}
 
-public:
-	SegmentTree(int sz) : size(sz) {
-		arr.resize(4 * sz);
-	}
-
-	void update(int i, T val, int ll, int rr, int idx)
+	void update(const int i, const T& val, const int ll, const int rr, const int idx)
 	{
 		if (ll == rr)
 		{
@@ -39,17 +34,58 @@ public:
 
 		arr[idx] = merge(arr[idx * 2 + 1], m - ll + 1, arr[idx * 2 + 2], rr - m);
 	}
-	void update(int i, T val) { update(i, val, 0, size - 1, 0); }
 
-	T get_range_value(int l, int r, int ll, int rr, int idx)
+	T get_range_value(const int l, const int r, const int ll, const int rr, const int idx)
 	{
-		if (l > r)
-			return T();
 		if (l == ll && rr == r)
 			return arr[idx];
+
 		int m = (ll + rr) / 2;
-		return merge(get_range_value(l, min(m, r), ll, m, idx * 2 + 1), min(m, r) - l + 1,
-			get_range_value(max(m + 1, l), r, m + 1, rr, idx * 2 + 2), r - max(m + 1, l) + 1);
+		if (max(ll, l) <= min(m, r))
+		{
+			if ((m + 1) <= r && (m + 1) >= l)
+			{
+				return merge(get_range_value(l, min(m, r), ll, m, idx * 2 + 1), min(m, r) - l + 1,
+					get_range_value(max(m + 1, l), r, m + 1, rr, idx * 2 + 2), r - max(m + 1, l) + 1);
+			}
+			else
+			{
+				return get_range_value(l, min(m, r), ll, m, idx * 2 + 1);
+			}
+		}
+		else if (max(m + 1, l) <= min(rr, r))
+		{
+			return get_range_value(max(m + 1, l), r, m + 1, rr, idx * 2 + 2);
+		}
+		else
+			return T();
 	}
-	T get_range_value(int l, int r) { return get_range_value(l, r, 0, size - 1, 0); }
+
+	void build(const int ll, const int rr, const int idx, const vector<T>& values)
+	{
+		if (ll == rr)
+		{
+			arr[idx] = values[ll];
+			return;
+		}
+		int m = (ll + rr) / 2;
+		build(ll, m, idx * 2 + 1, values);
+		build(m + 1, rr, idx * 2 + 2, values);
+		arr[idx] = merge(arr[idx * 2 + 1], m - ll + 1, arr[idx * 2 + 2], rr - m);
+	}
+public:
+	SegmentTree(const int sz, const T default_value = T()) : size(sz) {
+		arr.resize(4 * sz, default_value);
+	}
+
+	SegmentTree(const vector<T>& values, const T default_value = T())
+	{
+		size = values.size();
+		arr.resize(4 * size);
+		build(0, size - 1, 0, values);
+	}
+
+	void update(const int i, const T &val) { update(i, val, 0, size - 1, 0); }
+
+	T get_range_value(const int l, const int r) { return get_range_value(l, r, 0, size - 1, 0); }
 };

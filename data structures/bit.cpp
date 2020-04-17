@@ -27,7 +27,7 @@ public:
 	{
 		T ret = sum(r);
 		if (l > 0)
-			ret -= sum(l);
+			ret -= sum(l - 1);
 		return ret;
 	}
 

@@ -55,6 +55,36 @@ private:
 			from.pop_back();
 	}
 
+	void simple_mul(vector<int>& values, const int by_what) const
+	{
+		if (by_what == 0)
+		{
+			values.resize(1, 0);
+			return;
+		}
+		if (by_what == 1)
+			return;
+
+		values.push_back(0);
+		for (int i = values.size() - 2; i >= 0; i--)
+		{
+			long long ret = (long long)values[i] * by_what;
+			values[i] = ret % BIG_NUMBER_10BASE;
+			values[i + 1] += ret / BIG_NUMBER_10BASE;
+		}
+
+		for (int i = 0; i < values.size()-1; i++)
+		{
+			if (values[i] >= BIG_NUMBER_10BASE)
+			{
+				values[i + 1] += values[i] / BIG_NUMBER_10BASE;
+				values[i] %= BIG_NUMBER_10BASE;
+			}
+		}
+		if (values.back() == 0)
+			values.pop_back();
+	}
+
 	/* -1 less, 0 equal, 1 greater */
 	int compare(const vector<int>& lhs, const vector<int>& rhs) const
 	{
@@ -99,6 +129,14 @@ private:
 	big_num(const vector<int> values, bool is_positive) : values(values), is_positive(is_positive) {}
 
 public:
+	big_num(big_num&& other) noexcept
+	{
+		is_positive = other.is_positive;
+		other.values.swap(this->values);
+	}
+
+	big_num(const big_num& other) = default;
+
 	big_num(long long long_value)
 	{
 		if (long_value < 0)
@@ -114,7 +152,7 @@ public:
 		}
 	}
 
-	big_num(const string &string_value)
+	big_num(const string& string_value)
 	{
 		if (string_value[0] == '-')
 		{
@@ -163,6 +201,8 @@ public:
 		return response;
 	}
 
+	big_num& operator = (const big_num& other) = default;
+
 	big_num& operator += (const big_num& other)
 	{
 		increment(other.values, other.is_positive);
@@ -186,6 +226,21 @@ public:
 	{
 		big_num ret = *this;
 		ret.increment(other.values, !other.is_positive);
+		return ret;
+	}
+
+	big_num& operator *= (const int& other)
+	{
+		simple_mul(values, abs(other));
+		is_positive = (is_positive == (other >= 0));
+		return *this;
+	}
+
+	big_num operator * (const int& other) const
+	{
+		big_num ret = *this;
+		simple_mul(ret.values, abs(other));
+		ret.is_positive = is_positive == (other >= 0);
 		return ret;
 	}
 

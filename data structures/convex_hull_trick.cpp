@@ -1,5 +1,5 @@
 /*
-	Data structure to facilitate convex hull trick implementation.
+	Data structures to facilitate convex hull trick implementation.
 */
 
 template<class CoordinateType = long long, class FractionType = long double>
@@ -12,6 +12,7 @@ class ConvexHullOptimization
 		FractionType left, right;
 		FractionType intersection_point(const Line& other) const
 		{
+			// TODO: handle parallel lines case
 			return static_cast<FractionType>(x0 - other.x0) / static_cast<FractionType>( other.slope - slope );
 		}
 
@@ -66,5 +67,109 @@ public:
 			});
 		it--;
 		return it->evaluate(x);
+	}
+};
+
+
+template<class CoordinateType = long long, class FractionType = long long>
+class ConvexHullDynamic
+{
+	using LineCoordinateType = typename CoordinateType;
+	using LineFractionType = typename FractionType;
+	struct Line
+	{
+		LineCoordinateType slope;
+		LineCoordinateType x0;
+		mutable LineFractionType left;
+
+		Line(LineCoordinateType slope, LineCoordinateType x0, LineFractionType left) : slope(slope), x0(x0), left(left) { }
+
+		LineFractionType intersect(const Line& other) const
+		{
+			if (is_integral<LineFractionType>::value)
+			{
+				auto nom = static_cast<LineCoordinateType>(x0 - other.x0), denom = static_cast<LineCoordinateType>(other.slope - slope);
+				return nom / denom - ((nom < 0) == (denom < 0) ? 0 : (nom % denom) != 0);
+			}
+			else
+			{
+				return static_cast<LineFractionType>(x0 - other.x0) / static_cast<LineFractionType>(other.slope - slope);
+			}
+		}
+
+		bool operator< (const Line& rhs) const
+		{
+			return slope < rhs.slope;
+		}
+
+		bool operator< (const LineCoordinateType& rhs) const
+		{
+			return left < rhs;
+		}
+	};
+
+	CoordinateType min_value;
+	set<Line, std::less<>> lines;
+public:
+	ConvexHullDynamic(CoordinateType min_coord) : min_value(min_coord) {}
+	CoordinateType evaluate(CoordinateType x)
+	{
+		auto it = lines.lower_bound(x); it--;
+		return it->slope * x + it->x0;
+	}
+	void add_line(CoordinateType slope, CoordinateType x0)
+	{
+		Line candidate(slope, x0, min_value);
+		auto it = lines.lower_bound(candidate);
+		if (it != lines.end() && it->slope == slope)
+		{
+			if (it->x0 >= x0)
+				return;
+			lines.erase(it++);
+		}
+
+		decltype(it) new_it;
+		std::tie(new_it, std::ignore) = lines.insert(candidate);
+
+		auto prev_it = new_it;
+		while (it != lines.end())
+		{
+			auto new_left = it->intersect(candidate);
+			if (prev_it->left > it->left)
+				lines.erase(prev_it++);
+			else
+				prev_it++;
+
+			if (new_left <= it->left)
+				break;
+			it->left = new_left;
+			it++;
+		}
+
+		if (new_it != lines.begin())
+		{
+			it = std::prev(new_it);
+			while (true)
+			{
+				auto new_left = it->intersect(candidate);
+				if (new_left <= it->left)
+				{
+					if (it != lines.begin())
+						lines.erase(it--);
+					else
+					{
+						lines.erase(it);
+						break;
+					}
+				}
+				else
+				{
+					new_it->left = new_left;
+					return;
+				}
+			}
+			lines.erase(new_it);
+		}
+
 	}
 };
